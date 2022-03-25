@@ -1,0 +1,99 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.10">
+  <POU Name="MAIN" Id="{338ddbdd-706d-484e-b0ef-d0ec300fcf3f}" SpecialFunc="None">
+    <Declaration><![CDATA[PROGRAM MAIN
+VAR
+	readImage: FB_VN_ReadImage;
+	myImage : ITcVnImage;
+	hr : HRESULT;	
+	exportImageSize: ULINT;
+	result : STRING;
+	buffer : POINTER TO BYTE;
+	jsonDocument : FB_JsonSaxWriter;
+	jsonString : STRING(5000000);
+	myDisplayableImage : ITcVnDisplayableImage;
+END_VAR
+VAR CONSTANT
+	MAX_UDINT : UDINT := 4294967295;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[readImage(
+    sFilePath := 'C:\temp\image.png', 
+    ipDestImage := myImage,
+    bRead := TRUE,
+    nTimeout := T#20S
+);
+
+IF readImage.bBusy OR readImage.bError OR myImage = 0 THEN
+    RETURN;
+END_IF
+
+result := 'Start';
+
+hr := F_VN_ExportImageAsBmpSize(ipImage:=myImage,nBufferSize:=exportImageSize,hrPrev:=hr);
+
+IF Failed(hr) THEN
+	result := 'Unable to convert as size check failed';
+	RETURN;
+END_IF
+
+IF exportImageSize > MAX_UDINT THEN
+	result := 'Unable to convert as image is too big.  Use a premade byte array instead';
+	RETURN;
+END_IF
+
+IF exportImageSize <= 0 THEN
+	result := 'Unable to convert as image is empty';
+	RETURN;
+END_IF
+	
+buffer := __NEW(BYTE,ULINT_TO_UDINT(exportImageSize));
+hr := F_VN_ExportImageAsBmp(ipImage:=myImage,pBuffer:=buffer,nBufferSize:=exportImageSize,hrPrev:=hr);
+
+IF FAILED(hr) THEN
+	result := 'Export failed';
+	__DELETE(buffer);
+	RETURN;
+END_IF
+
+jsonDocument.ResetDocument();
+jsonDocument.StartObject();
+jsonDocument.AddKeyString('mime','image/bmp');
+jsonDocument.AddKey('data');
+jsonDocument.AddBase64(buffer,ULINT_TO_DINT(exportImageSize));
+jsonDocument.EndObject();
+jsonDocument.CopyDocument(jsonString,SIZEOF(jsonString));
+
+result := 'Success';
+
+__DELETE(buffer);
+
+hr := F_VN_TransformIntoDisplayableImage(myImage, myDisplayableImage, S_OK);]]></ST>
+    </Implementation>
+    <LineIds Name="MAIN">
+      <LineId Id="6" Count="9" />
+      <LineId Id="112" Count="0" />
+      <LineId Id="111" Count="0" />
+      <LineId Id="42" Count="1" />
+      <LineId Id="92" Count="0" />
+      <LineId Id="91" Count="0" />
+      <LineId Id="93" Count="0" />
+      <LineId Id="95" Count="0" />
+      <LineId Id="94" Count="0" />
+      <LineId Id="52" Count="4" />
+      <LineId Id="58" Count="1" />
+      <LineId Id="89" Count="0" />
+      <LineId Id="60" Count="10" />
+      <LineId Id="103" Count="0" />
+      <LineId Id="97" Count="0" />
+      <LineId Id="72" Count="3" />
+      <LineId Id="98" Count="1" />
+      <LineId Id="109" Count="1" />
+      <LineId Id="104" Count="0" />
+      <LineId Id="76" Count="0" />
+      <LineId Id="107" Count="0" />
+      <LineId Id="38" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

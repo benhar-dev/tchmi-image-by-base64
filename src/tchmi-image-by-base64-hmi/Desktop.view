@@ -1,0 +1,66 @@
+﻿<div id="Desktop" data-tchmi-type="TcHmi.Controls.System.TcHmiView" data-tchmi-top="0" data-tchmi-left="0" data-tchmi-width-mode="Content" data-tchmi-min-width="100" data-tchmi-min-width-unit="%" data-tchmi-height-mode="Content" data-tchmi-min-height="100" data-tchmi-min-height-unit="%">
+  <div id="ViewDesktopBeckhoffLogo" data-tchmi-type="TcHmi.Controls.Beckhoff.TcHmiImage" data-tchmi-src="Images/Beckhoff_Logo.svg" data-tchmi-left="20" data-tchmi-top="20" data-tchmi-width="194" data-tchmi-height="57">
+
+  </div>
+  <div id="TcHmiHtmlHost" data-tchmi-type="TcHmi.Controls.System.TcHmiHtmlHost" data-tchmi-height="300" data-tchmi-height-unit="px" data-tchmi-left="20" data-tchmi-left-unit="px" data-tchmi-top="87" data-tchmi-top-unit="px" data-tchmi-width="300" data-tchmi-width-unit="px">
+
+
+
+      <img id="myImage"> </img>
+
+
+      <script>
+
+
+        if (TcHmi.Server.isWebsocketReady()) {
+            var commands = [
+                {
+                    'symbol': 'PLC1.MAIN.jsonString'
+                }];
+
+            TcHmi.Server.subscribeEx(commands, 500, { timeout: 2000 }, function (data) {
+                if (data.error !== TcHmi.Errors.NONE) {
+                    return;
+                }
+
+                var response = data.response;
+                if (!response || response.error !== undefined) {
+                    return;
+                }
+
+                var commands = response.commands;
+                if (commands === undefined) {
+                    return;
+                }
+
+                for (var i = 0, ii = commands.length; i < ii; i++) {
+                    var command = commands[i];
+                    if (command === undefined) {
+                        return;
+                    }
+                    if (command.error !== undefined) {
+                        return;
+                    }
+
+                    // Handle result...
+                    console.log(command.symbol + '=' + command.readValue);
+
+                    imageContent = JSON.parse(command.readValue);
+
+                    if (imageContent.data && imageContent.mime) {
+                        
+                        var myImage = document.getElementById('myImage');
+                        myImage.src = 'data:' + imageContent.mime + ';base64,' + imageContent.data;
+
+
+                    }
+
+                }
+            });
+        }
+
+      </script>
+
+
+  </div>
+</div>
